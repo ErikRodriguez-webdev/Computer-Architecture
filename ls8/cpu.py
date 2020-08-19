@@ -73,10 +73,34 @@ class CPU:
         while True:
             # set ir to self.ram[self.pc]
             ir = self.ram[self.pc]
-            #
+
+            # check if ir equals LDI
+            if ir == LDI:
+                # then grab two bits that follow after machine code LDI
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
+                # set operand_a as key and operand_b as value in register
+                self.reg[operand_a] = operand_b
+                # add 2 to program counter
+                self.pc += 2
+            # check if ir equals PRN
+            if ir == PRN:
+                # then grab the bit that follows after machine code PRN
+                key = self.ram_read(self.pc + 1)
+                # print the value that corresponds to key in register
+                print(self.reg[key])
+            # check if ir equals HLT
+            elif ir == HLT:
+                # break from while loop
+                break
+
+            # add one to program counter
+            self.pc += 1
 
     def ram_read(self, address):
+        # return value for passed in address/key
         return self.ram[address]
 
     def ram_write(self, value, address):
+        # access or create address/key with value
         self.ram[address] = value
