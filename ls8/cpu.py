@@ -3,9 +3,10 @@
 import sys
 
 # machine codes to track bits
-LDI = 0b10000010
-PRN = 0b01000111
-HLT = 0b00000001
+# LDI = 0b10000010
+# MUL = 0b10100010
+# PRN = 0b01000111
+# HLT = 0b00000001
 
 
 class CPU:
@@ -16,11 +17,18 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.end_loop = True
+        self.branchtable = {
+            0b10000010: self.LDI,
+            0b01000111: self.PRN,
+            0b00000001: self.HLT,
+            0b10100010: self.MUL
+        }
 
     def load(self):
         """Load a program into memory."""
 
-        # address = 0
+        address = 0
 
         # For now, we've just hardcoded a program:
         # grab file name passed in through terminal argument
@@ -30,9 +38,12 @@ class CPU:
             data = program.read()
             data_num = data.split("\n")
 
-            for idx, num in enumerate(data_num):
-                if num != "":
-                    self.ram[idx] = num[:8]
+            # use index default 0 to insert in ram using enumerate and sanitize data
+            for num in data_num:
+                if len(num) > 0 and num[0] in "10":
+                    value = int(num[:8], 2)
+                    self.ram[address] = value
+                    address += 1
 
         # program = [
         #     # From print8.ls8
@@ -53,6 +64,8 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         # elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -77,37 +90,54 @@ class CPU:
 
         print()
 
+    def LDI(self):
+        # then grab first and second bits that follow after machine code
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        # set operand_a as key and operand_b as value in register
+        self.reg[operand_a] = operand_b
+        # add 2 to program counter
+        self.pc += 2
+
+    # check if ir equals MUL
+    def MUL(self):
+        # then grab first and second bits that follow after machine code
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        # print the value that returns from alu
+        self.alu("MUL", operand_a, operand_b)
+        # add 2 to program counter
+        self.pc += 2
+        # check if ir equals PRN
+
+    def PRN(self):
+        # then grab the bit that follows after machine code PRN
+        key = self.ram_read(self.pc + 1)
+        # print the value that corresponds to key in register
+        print(self.reg[key])
+        # add 1 to program counter
+        self.pc += 1
+        # check if ir equals HLT
+
+    def HLT(self):
+        # break from while loop
+        self.end_loop = False
+
     def run(self):
         """Run the CPU."""
         # while through while true
-        while True:
+        while self.end_loop:
             # set ir to self.ram[self.pc]
             ir = self.ram[self.pc]
+            # print("test", ir, self.branchtable[ir])
 
-            # check if ir equals LDI
-            if ir == LDI:
-                # then grab two bits that follow after machine code LDI
-                operand_a = self.ram_read(self.pc + 1)
-                operand_b = self.ram_read(self.pc + 2)
-                # set operand_a as key and operand_b as value in register
-                self.reg[operand_a] = operand_b
-                # add 2 to program counter
-                self.pc += 2
-
-            # check if ir equals PRN
-            if ir == PRN:
-                # then grab the bit that follows after machine code PRN
-                key = self.ram_read(self.pc + 1)
-                # print the value that corresponds to key in register
-                print(self.reg[key])
-            # check if ir equals HLT
-            elif ir == HLT:
-                # break from while loop
-                break
+            # use ir with call for 0(1) lookup
+            self.branchtable[ir]()
 
             # add one to program counter
             self.pc += 1
 
+    # check if ir equals LDI
     def ram_read(self, address):
         # return value for passed in address/key
         return self.ram[address]
