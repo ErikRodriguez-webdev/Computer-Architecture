@@ -16,13 +16,20 @@ class CPU:
         """Construct a new CPU."""
         self.ram = [0] * 256
         self.reg = [0] * 8
+        self.ir = None
         self.pc = 0
-        self.end_loop = True
+        self.fl_less = False
+        self.fl_greater = False
+        self.fl_equal = False
+        self.loop = True
         self.branchtable = {
             0b10000010: self.LDI,
             0b01000111: self.PRN,
             0b00000001: self.HLT,
-            0b10100010: self.MUL
+            0b10100010: self.MUL,
+            0b10100111: self.CMP,
+            0b01010101: self.JEQ,
+            0b01010110: self.JNE
         }
 
     def load(self):
@@ -66,6 +73,20 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        # check if operation code equals "CMP"
+        elif op == "CMP":
+            # check if reg_a is equal to reg_b
+            if self.reg[reg_a] == self.reg[reg_b]:
+                # then set self.fl_equal = True
+                self.fl_equal = True
+            # check if reg_a is less than reg_b
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                # then set self.fl_less = True
+                self.fl_less = True
+            # check if reg_a is greater than reg_b
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                # then set self.fl_greater = True
+                self.fl_greater = True
         # elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -90,6 +111,32 @@ class CPU:
 
         print()
 
+    def JMP(self):
+        # grab value using key following after machine code
+        operand_a = self.ram_read(self.pc + 1)
+        # set pc to the key
+        self.pc = self.reg[operand_a]
+
+    def JEQ(self):
+        # check if the equal flag is true
+        if self.fl_equal == True:
+            # then call JMP method
+            self.JMP()
+            # reset equal flag to false
+            self.equal = False
+            # add one to self.pc
+            # self.pc += 1
+
+    def JNE(self):
+        # check if the equal flag is False
+        if self.fl_equal == False:
+            # then call JMP method
+            self.JMP()
+            # reset equal flag to false
+            self.equal = False
+            # add one to self.pc
+            # self.pc += 1
+
     def LDI(self):
         # then grab first and second bits that follow after machine code
         operand_a = self.ram_read(self.pc + 1)
@@ -99,7 +146,6 @@ class CPU:
         # add 2 to program counter
         self.pc += 2
 
-    # check if ir equals MUL
     def MUL(self):
         # then grab first and second bits that follow after machine code
         operand_a = self.ram_read(self.pc + 1)
@@ -108,31 +154,37 @@ class CPU:
         self.alu("MUL", operand_a, operand_b)
         # add 2 to program counter
         self.pc += 2
-        # check if ir equals PRN
 
     def PRN(self):
-        # then grab the bit that follows after machine code PRN
         key = self.ram_read(self.pc + 1)
         # print the value that corresponds to key in register
         print(self.reg[key])
         # add 1 to program counter
         self.pc += 1
-        # check if ir equals HLT
+
+    def CMP(self):
+        # then grab first and second bits that follow after machine code
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)
+        # use alu on the to determine flag for
+        self.alu("CMP", operand_a, operand_b)
+        # add 1 to program counter
+        self.pc += 2
 
     def HLT(self):
         # break from while loop
-        self.end_loop = False
+        self.loop = False
 
     def run(self):
         """Run the CPU."""
         # while through while true
-        while self.end_loop:
+        while self.loop:
             # set ir to self.ram[self.pc]
-            ir = self.ram[self.pc]
-            # print("test", ir, self.branchtable[ir])
+            self.ir = self.ram[self.pc]
+            print("while ir and branch", self.ir, self.branchtable[self.ir])
 
             # use ir with call for 0(1) lookup
-            self.branchtable[ir]()
+            self.branchtable[self.ir]()
 
             # add one to program counter
             self.pc += 1
