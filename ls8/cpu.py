@@ -75,16 +75,18 @@ class CPU:
             self.reg[reg_a] *= self.reg[reg_b]
         # check if operation code equals "CMP"
         elif op == "CMP":
+            print("are", reg_a, reg_b, self.reg[reg_a], self.reg[reg_b])
             # check if reg_a is equal to reg_b
-            if self.reg[reg_a] == self.reg[reg_b]:
+            if reg_a == reg_b:
+                print("we in here")
                 # then set self.fl_equal = True
                 self.fl_equal = True
             # check if reg_a is less than reg_b
-            elif self.reg[reg_a] < self.reg[reg_b]:
+            elif reg_a < reg_b:
                 # then set self.fl_less = True
                 self.fl_less = True
             # check if reg_a is greater than reg_b
-            elif self.reg[reg_a] > self.reg[reg_b]:
+            elif reg_a > reg_b:
                 # then set self.fl_greater = True
                 self.fl_greater = True
         # elif op == "SUB": etc
@@ -115,17 +117,19 @@ class CPU:
         # grab value using key following after machine code
         operand_a = self.ram_read(self.pc + 1)
         # set pc to the key
-        self.pc = self.reg[operand_a]
+        self.pc = self.ram[operand_a]
 
     def JEQ(self):
+        print("are")
         # check if the equal flag is true
         if self.fl_equal == True:
+            print("we in here")
             # then call JMP method
             self.JMP()
             # reset equal flag to false
             self.equal = False
             # add one to self.pc
-            # self.pc += 1
+            self.pc += 1
 
     def JNE(self):
         # check if the equal flag is False
@@ -133,9 +137,9 @@ class CPU:
             # then call JMP method
             self.JMP()
             # reset equal flag to false
-            self.equal = False
+            # self.equal = False
             # add one to self.pc
-            # self.pc += 1
+            self.pc += 1
 
     def LDI(self):
         # then grab first and second bits that follow after machine code
@@ -181,10 +185,11 @@ class CPU:
         while self.loop:
             # set ir to self.ram[self.pc]
             self.ir = self.ram[self.pc]
-            print("while ir and branch", self.ir, self.branchtable[self.ir])
 
             # use ir with call for 0(1) lookup
             self.branchtable[self.ir]()
+            print("while ir and branch", self.ir,
+                  self.fl_equal, self.branchtable[self.ir])
 
             # add one to program counter
             self.pc += 1
