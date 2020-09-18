@@ -75,7 +75,6 @@ class CPU:
             self.reg[reg_a] *= self.reg[reg_b]
         # check if operation code equals "CMP"
         elif op == "CMP":
-            # print("hello", bin(self.reg[reg_a]), bin(self.reg[reg_b]))
             # check if reg_a is less than reg_b
             if self.reg[reg_a] < self.reg[reg_b]:
                 # then set self.fl_less = True
@@ -126,8 +125,6 @@ class CPU:
         operand_a = self.ram_read(self.pc + 1)
         # set pc to the key
         self.pc = self.reg[operand_a]
-        # add one to self.pc
-        # self.pc += 2
 
     def JEQ(self):
         # check if the equal flag is true
@@ -178,7 +175,7 @@ class CPU:
         operand_b = self.ram_read(self.pc + 2)
         # use alu on the to determine flag for
         self.alu("CMP", operand_a, operand_b)
-        # add 2 to program counter
+        # add 3 to program counter
         self.pc += 3
 
     def HLT(self):
@@ -189,15 +186,11 @@ class CPU:
         """Run the CPU."""
         # while through while true
         while self.loop:
-            # print("START", self.ir, self.fl_less,
-            #       self.fl_greater, self.fl_equal, self.reg)
             # set ir to self.ram[self.pc]
             self.ir = self.ram[self.pc]
 
             # use ir with branchtable to call for 0(1) lookup
             self.branchtable[self.ir]()
-            # print("run while", self.ir,
-            #       self.fl_less, self.branchtable[self.ir])
 
     def ram_read(self, address):
         # return value for passed in address/key
