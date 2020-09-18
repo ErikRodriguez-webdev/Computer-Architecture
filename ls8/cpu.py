@@ -18,9 +18,9 @@ class CPU:
         self.reg = [0] * 8
         self.ir = None
         self.pc = 0
-        self.fl_less = False
-        self.fl_greater = False
-        self.fl_equal = False
+        self.fl_less = None
+        self.fl_greater = None
+        self.fl_equal = None
         self.loop = True
         self.branchtable = {
             0b10000010: self.LDI,
@@ -29,7 +29,8 @@ class CPU:
             0b10100010: self.MUL,
             0b10100111: self.CMP,
             0b01010101: self.JEQ,
-            0b01010110: self.JNE
+            0b01010110: self.JNE,
+            0b01010100: self.JMP
         }
 
     def load(self):
@@ -68,27 +69,34 @@ class CPU:
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
-
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
         # check if operation code equals "CMP"
         elif op == "CMP":
-            print("are", reg_a, reg_b, self.reg[reg_a], self.reg[reg_b])
-            # check if reg_a is equal to reg_b
-            if reg_a == reg_b:
-                print("we in here")
-                # then set self.fl_equal = True
-                self.fl_equal = True
+            # print("hello", bin(self.reg[reg_a]), bin(self.reg[reg_b]))
             # check if reg_a is less than reg_b
-            elif reg_a < reg_b:
+            if self.reg[reg_a] < self.reg[reg_b]:
                 # then set self.fl_less = True
-                self.fl_less = True
+                self.fl_less = 1
+            else:
+                self.fl_less = 0
+
             # check if reg_a is greater than reg_b
-            elif reg_a > reg_b:
+            if self.reg[reg_a] > self.reg[reg_b]:
                 # then set self.fl_greater = True
-                self.fl_greater = True
+                self.fl_greater = 1
+            else:
+                self.fl_greater = 0
+
+            # check if reg_a is equal to reg_b
+            if self.reg[reg_a] == self.reg[reg_b]:
+                # then set self.fl_equal = True
+                self.fl_equal = 1
+            else:
+                self.fl_equal = 0
+
         # elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -117,29 +125,27 @@ class CPU:
         # grab value using key following after machine code
         operand_a = self.ram_read(self.pc + 1)
         # set pc to the key
-        self.pc = self.ram[operand_a]
+        self.pc = self.reg[operand_a]
+        # add one to self.pc
+        # self.pc += 2
 
     def JEQ(self):
-        print("are")
         # check if the equal flag is true
-        if self.fl_equal == True:
-            print("we in here")
+        if self.fl_equal == 1:
             # then call JMP method
-            self.JMP()
-            # reset equal flag to false
-            self.equal = False
+            return self.JMP()
+        else:
             # add one to self.pc
-            self.pc += 1
+            self.pc += 2
 
     def JNE(self):
         # check if the equal flag is False
-        if self.fl_equal == False:
+        if self.fl_equal == 0:
             # then call JMP method
-            self.JMP()
-            # reset equal flag to false
-            # self.equal = False
-            # add one to self.pc
-            self.pc += 1
+            return self.JMP()
+
+        # add one to self.pc
+        self.pc += 2
 
     def LDI(self):
         # then grab first and second bits that follow after machine code
@@ -147,8 +153,8 @@ class CPU:
         operand_b = self.ram_read(self.pc + 2)
         # set operand_a as key and operand_b as value in register
         self.reg[operand_a] = operand_b
-        # add 2 to program counter
-        self.pc += 2
+        # add 3 to program counter
+        self.pc += 3
 
     def MUL(self):
         # then grab first and second bits that follow after machine code
@@ -156,15 +162,15 @@ class CPU:
         operand_b = self.ram_read(self.pc + 2)
         # print the value that returns from alu
         self.alu("MUL", operand_a, operand_b)
-        # add 2 to program counter
-        self.pc += 2
+        # add 3 to program counter
+        self.pc += 3
 
     def PRN(self):
         key = self.ram_read(self.pc + 1)
         # print the value that corresponds to key in register
         print(self.reg[key])
-        # add 1 to program counter
-        self.pc += 1
+        # add 2 to program counter
+        self.pc += 2
 
     def CMP(self):
         # then grab first and second bits that follow after machine code
@@ -172,8 +178,8 @@ class CPU:
         operand_b = self.ram_read(self.pc + 2)
         # use alu on the to determine flag for
         self.alu("CMP", operand_a, operand_b)
-        # add 1 to program counter
-        self.pc += 2
+        # add 2 to program counter
+        self.pc += 3
 
     def HLT(self):
         # break from while loop
@@ -183,18 +189,16 @@ class CPU:
         """Run the CPU."""
         # while through while true
         while self.loop:
+            # print("START", self.ir, self.fl_less,
+            #       self.fl_greater, self.fl_equal, self.reg)
             # set ir to self.ram[self.pc]
             self.ir = self.ram[self.pc]
 
-            # use ir with call for 0(1) lookup
+            # use ir with branchtable to call for 0(1) lookup
             self.branchtable[self.ir]()
-            print("while ir and branch", self.ir,
-                  self.fl_equal, self.branchtable[self.ir])
+            # print("run while", self.ir,
+            #       self.fl_less, self.branchtable[self.ir])
 
-            # add one to program counter
-            self.pc += 1
-
-    # check if ir equals LDI
     def ram_read(self, address):
         # return value for passed in address/key
         return self.ram[address]
